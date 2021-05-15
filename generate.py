@@ -3,14 +3,18 @@
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
+import json
 import os
 import requests
-import base64
-import json
 
 ## This is a local file containing some "Sensitive" data, but also the URL's Below
 import auth
 
+# Using JIRA integration?
+# Change to False if not
+JIRA = True
+
+rootPath = "/Volumes/HiveMind/Videos"
 
 #### Variables ####
 ## I've imported a seperate file called auth.py to keep this a bit more secure
@@ -24,43 +28,74 @@ channelName = f'{auth.channelName}'
 channelAddress = f'{auth.channelAddress}'
 project = f'{auth.project}'
 
-## JIRA URL
-url = f'{auth.url}'
+############ JIRA ###########
 
-# API HEADERS - pulled from auth.py file
-# Authentication is needed in your request Header to access the JIRA API
-headers = auth.headers
+## JIRA URL
+if JIRA == True:
+    # JIRA URL and Headers pulled from Auth.py file
+    url = f'{auth.url}'\
+    # Authentication is needed in your request Header to access the JIRA API
+    headers = auth.headers
+else:
+    pass
 
 ## This defines the prompt we see when selecting the "TYPE" of project
 ## Triple ' marks keeps the string open across multiple lines. This (theoretically) makes the longer strings below a lot easier to edit
 typePrompt = '''What type of Project is this?
- 1 - Getting Started
- 2 - Product Review
- 3 - Quick Tips
- 
- ?:  '''
+1 - Getting Started
+2 - Product Review
+3 - Quick Tips
+4 - Code Review
+
+?:  '''
 
 # Define video Type
 # Asks the user to select Video Type based on the above
-projectType = int(input(typePrompt))
+projectType = 0
+while projectType not in [1,2,3,4]:
+    ## IF Statement to determine where to save the files based on the Project Type selected above
+    projectType = int(input(typePrompt))
 
 # Ask user to Enter the JIRA Project ID
-projectID = input(f"What is the JIRA Number after {project}- ? : ")
+projectID = input(f"What is the Project ID after {project}- ? : ")
 
-# Pull Video Title from JIRA Project using JIRA API
-result = requests.request("GET", f"{url}/rest/api/latest/issue/{project}-{projectID}", verify=False, headers=headers)
-# Parse the result into JSON which we can reference like dicts.
-JSONResult = json.loads(result.text)
+if JIRA == True:
+    # Pull Video Title from JIRA Project using JIRA API
+    result = requests.request("GET", f"{url}/rest/api/latest/issue/{project}-{projectID}", verify=False, headers=headers)
+    # Parse the result into JSON which we can reference like dicts.
+    JSONResult = json.loads(result.text)
 
-#Output Video Title to Terminal - Mostly for Error checking but kinda nice to have
-print(JSONResult['fields']['summary'])
-# Assign JIRA Project Summary to Job Title
-jobTitle = JSONResult['fields']['summary']
+    #Output Video Title to Terminal - Mostly for Error checking but kinda nice to have
+    print(JSONResult['fields']['summary'])
+    # Assign JIRA Project Summary to Job Title
+    jobTitle = JSONResult['fields']['summary']
+else:
+    jobTitle = str(input("What is the title of this project?: "))
 
-# Not Currently used - TODO - Mount SMB Share
-# directory = "/Volumes/HiveMind"
-# if not os.path.exists(directory): os.makedirs(directory)
-# os.system("mount_smbfs //stuart:@192.168.1.20/HiveMind ~/HiveMind")
+# Set Path based on inputs
+if projectType == 1:
+    path = f"{rootPath}/Getting Started Series/{project}-{projectID} - {jobTitle}"
+elif projectType == 2:
+    path = f"{rootPath}/Product Reviews/{project}-{projectID} - {jobTitle}"
+elif projectType == 3:
+    path = f"{rootPath}/Quick Tips/{project}-{projectID} - {jobTitle}"
+elif projectType == 4:
+    path = f"{rootPath}/Code Review/{project}-{projectID} - {jobTitle}"
+else:
+    projectType = int(input(typePrompt))
+
+## I render my videos out into a path called "Render" in a subfolder under each project.
+## All files associated with the YouTube upload go into this folder
+renderpath = f"{path}/Render"
+
+## Create Project Directories
+## You could reasonably create any Directory structure you want here.
+os.mkdir(path)
+## Create Render Directory
+os.mkdir(renderpath)
+
+# TODO - Mount SMB Share
+
 
 ################    TEMPLATES   ################ 
 
@@ -83,7 +118,7 @@ Let's get started!"""
 ## Templated Outtro
 outtroTemplate = f"""That's all we have for this video and I hope it helped you in your home automation journey.
 
-Be sure to comment down below with home automation idea you'd like to see me cover in a future video.
+Be sure to comment down below with a home automation idea you'd like to see me cover in a future video.
 Don't forget to Follow {channelName} on Twitter, Instagram and Facebook.
 
 If you liked this video, hit the Thumbs Up button down below to give it a like.
@@ -136,27 +171,6 @@ Home Assistant for Android: https://bit.ly/30VUsNh
 
 Music: https://www.purple-planet.com
 """
-
-
-## IF Statement to determine where to save the files based on the Project Type selected above
-if projectType == 1:
-    path = f"/Volumes/HiveMind/Videos/Getting Started Series/{project}-{projectID} - {jobTitle}"
-elif projectType == 2:
-    path = f"/Volumes/HiveMind/Videos/Product Reviews/{project}-{projectID} - {jobTitle}"
-elif projectType == 3:
-    path = f"/Volumes/HiveMind/Videos/Quick Tips/{project}-{projectID} - {jobTitle}"
-else:
-    projectType = int(input(typePrompt)) 
-
-## I render my videos out into a path called "Render" in a subfolder under each project.
-## All files associated with the YouTube upload go into this folder
-renderpath = f"{path}/Render"
-
-## Create Project Directories
-## You could reasonably create any Directory structure you want here.
-os.mkdir(path)
-## Create Render Directory
-os.mkdir(renderpath)
 
 ###########################     Create the WORD Document    ############################
 # Instantiate Document
