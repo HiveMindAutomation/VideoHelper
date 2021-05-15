@@ -28,6 +28,8 @@ channelName = f'{auth.channelName}'
 channelAddress = f'{auth.channelAddress}'
 project = f'{auth.project}'
 
+## Greeting Definition for String Substitution
+greeting = "Welcome to the Hive"
 ############ JIRA ###########
 
 ## JIRA URL
@@ -56,7 +58,7 @@ while projectType not in [1,2,3,4]:
     ## IF Statement to determine where to save the files based on the Project Type selected above
     projectType = int(input(typePrompt))
 
-# Ask user to Enter the JIRA Project ID
+# Ask user to Enter the Project ID
 projectID = input(f"What is the Project ID after {project}- ? : ")
 
 if JIRA == True:
@@ -100,7 +102,7 @@ os.mkdir(renderpath)
 ################    TEMPLATES   ################ 
 
 ## Templated Intro
-introTemplate = f"""Hi, I'm {name} from {channelName} and welcome to the Hive!
+introTemplate = f"""Hi, I'm {name} from {channelName} and {greeting}
 
 
 In This Video we'll be taking a look at {jobTitle}.
@@ -145,14 +147,16 @@ descriptionTextBase = f"""{jobTitle}
 *** Support the Channel***
 Buy Me a Coffee: https://buymeacoffee.com/HiveMindAuto
 
-*** Find Hive Mind Automation on Social Media ***
+*** Find {channelName} on Social Media ***
 
 Twitter: {twitterURL}
 Instagram: {instagramURL}
 Facebook: {facebookURL}
 
 *** Affiliate Links ***
-*** These links help the channel by providing a commission on purchases\n\n
+*** These links help the channel by providing a commission on purchases
+
+
 *** TIMESTAMPS ***
 
 0:00 Intro
